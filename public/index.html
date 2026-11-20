@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101821">
+  <meta name="description" content="A persistent daily strategy match for up to nine players.">
+  <title>Tank Turn Tactics — Alliance</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="site-header">
+      <div class="brand">
+        <div class="brand-mark">TTT</div>
+        <div>
+          <div class="eyebrow">A daily strategy game</div>
+          <h1>Tank Turn Tactics</h1>
+          <div class="subhead">A persistent 15 × 15 match for up to 9 players</div>
+        </div>
+      </div>
+      <div class="header-pill">Browser multiplayer · 9 seats</div>
+    </header>
+
+    <main id="home">
+      <div class="home-grid">
+        <section class="card">
+          <div class="eyebrow">Set up a match</div>
+          <h2 class="section-title">Create a new game</h2>
+          <p class="muted small">Choose all nine countries / player names. Your friends can claim their seats with the room code and their exact names.</p>
+          <label class="field-label">Players (edit the names)</label>
+          <div class="roster-inputs" id="rosterInputs"></div>
+          <label class="field-label" for="hostPlayer">Your seat</label>
+          <select id="hostPlayer">
+            <option value="">Spectate (do not play)</option>
+          </select>
+          <button id="createRoom" class="btn primary full">Create game</button>
+          <div id="hostStatus" class="status-line" aria-live="polite"></div>
+        </section>
+
+        <section class="card">
+          <div class="eyebrow">Join your friends</div>
+          <h2 class="section-title">Join an existing game</h2>
+          <p class="muted small">Enter the room code and the exact player name your group assigned to you.</p>
+          <label class="field-label" for="roomCodeInput">Room code</label>
+          <input id="roomCodeInput" autocomplete="off" maxlength="6" placeholder="e.g. 7KQ4PD">
+          <label class="field-label" for="joinName">Your country / player name</label>
+          <input id="joinName" autocomplete="off" maxlength="32" placeholder="e.g. Japan">
+          <button id="joinRoom" class="btn primary full">Join game</button>
+          <div id="joinStatus" class="status-line" aria-live="polite"></div>
+          <div class="note small">Each seat can only be claimed once. Keep the browser you joined with, because it stores your private player key for reconnecting later.</div>
+        </section>
+      </div>
+
+      <section class="card rules-card">
+        <div class="eyebrow">Core rules</div>
+        <h2 class="section-title">One Action Point. Four choices. Last player standing.</h2>
+        <div class="rule-list">
+          <div class="rule"><strong>Move</strong><span>Spend 1 AP to move one square up, down, left or right.</span></div>
+          <div class="rule"><strong>Attack</strong><span>Spend 1 AP to hit a player within your range. Three hits eliminate a player.</span></div>
+          <div class="rule"><strong>Transfer</strong><span>Spend 1 AP to give 1 AP to another player within your range.</span></div>
+          <div class="rule"><strong>Extend range</strong><span>Spend 1 AP to permanently increase your range by one square.</span></div>
+        </div>
+        <p class="footer-note">Everyone starts with 1 AP, 3 lives and range 2. Range includes horizontal, vertical and diagonal squares (square / Chebyshev distance). Movement is orthogonal only. Players cannot occupy the same square. Living players receive 1 AP every day at 20:00 Japan time. The database applies this even when everyone is offline.</p>
+      </section>
+    </main>
+
+    <main id="game" class="hidden">
+      <div class="game-head">
+        <div>
+          <div class="eyebrow">Persistent match</div>
+          <h2 class="game-title">Alliance battlefield</h2>
+        </div>
+        <div class="room-tools">
+          <div class="room-code"><span class="muted small">ROOM</span><code id="roomCodeDisplay"></code></div>
+          <button id="copyRoom" class="btn subtle">Copy code</button>
+          <button id="backHome" class="btn subtle">Back</button>
+        </div>
+      </div>
+
+      <div id="winnerBanner" class="winner hidden"></div>
+      <div class="stats">
+        <div class="stat"><div class="stat-label">Day</div><div id="dayValue" class="stat-value">1</div></div>
+        <div class="stat"><div class="stat-label">Daily AP</div><div class="stat-value">20:00 JST</div></div>
+        <div class="stat"><div class="stat-label">Players alive</div><div id="aliveValue" class="stat-value">9 / 9</div></div>
+        <div class="stat"><div class="stat-label">Your seat</div><div id="connectionValue" class="stat-value">Spectator</div></div>
+      </div>
+
+      <div class="game-layout">
+        <section class="card board-card">
+          <div class="board-top">
+            <h2>15 × 15 map</h2>
+            <div id="boardHint" class="board-hint">Choose an action, then select a square or player.</div>
+          </div>
+          <div id="board" class="board" role="grid" aria-label="15 by 15 game board"></div>
+          <div class="footer-note">Coordinates start at A1 in the top-left. Player markers show the first two letters of each name.</div>
+        </section>
+
+        <aside class="side-stack">
+          <section class="card active-card">
+            <div class="eyebrow">Your country</div>
+            <div class="active-top"><h3 id="activeName" class="active-name">Not connected</h3><span id="activeState" class="pill">Waiting</span></div>
+            <div class="player-metrics">
+              <div class="metric"><span>Action points</span><b id="activeAP">—</b></div>
+              <div class="metric"><span>Lives</span><b id="activeLives">—</b></div>
+              <div class="metric"><span>Range</span><b id="activeRange">—</b></div>
+            </div>
+            <div class="eyebrow action-eyebrow">Choose an action · 1 AP each</div>
+            <div class="action-grid">
+              <button class="btn action-btn" data-action="move"><span class="action-title">Move</span><span class="action-sub">1 square</span></button>
+              <button class="btn action-btn" data-action="attack"><span class="action-title">Attack</span><span class="action-sub">1 hit</span></button>
+              <button class="btn action-btn" data-action="transfer"><span class="action-title">Transfer AP</span><span class="action-sub">Give 1 AP</span></button>
+              <button class="btn action-btn" data-action="extend"><span class="action-title">Extend range</span><span class="action-sub">Range +1</span></button>
+            </div>
+            <div id="actionHint" class="action-hint">Select an action to begin. You need at least 1 AP.</div>
+            <button id="cancelAction" class="btn subtle full cancel-btn">Cancel action</button>
+            <div id="gameNotice" class="status-line" aria-live="polite"></div>
+          </section>
+
+          <section class="card">
+            <div class="eyebrow">The countries</div>
+            <h3 class="section-title">Players</h3>
+            <div id="playersList" class="players-list"></div>
+          </section>
+
+          <section class="card">
+            <div class="eyebrow">Recent activity</div>
+            <h3 class="section-title">Action log</h3>
+            <div id="eventLog" class="log"></div>
+          </section>
+        </aside>
+      </div>
+      <div id="pollStatus" class="footer-note" aria-live="polite">Game data is saved to the server.</div>
+    </main>
+
+    <footer class="site-footer">Tank Turn Tactics · Your match is stored online. No player needs to stay online for the daily AP update.</footer>
+  </div>
+</body>
+</html>
