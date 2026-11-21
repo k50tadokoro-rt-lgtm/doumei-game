@@ -13,6 +13,7 @@ const app = express();
 const PORT = Number(process.env.PORT || 3000);
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const ALLOWED_BOARD_SIZES = [10, 12, 15];
 
 if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
   console.error('Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY environment variable.');
@@ -76,7 +77,11 @@ app.post('/api/games', createLimiter, async (req, res) => {
   try {
     const names = req.body?.names;
     const playerIndex = req.body?.playerIndex;
+    const boardSize = req.body?.boardSize === undefined ? 15 : Number(req.body.boardSize);
 
+    if (!ALLOWED_BOARD_SIZES.includes(boardSize)) {
+      return apiError(res, 400, 'Board size must be 10, 12 or 15.');
+    }
     if (!Array.isArray(names) || names.length !== 9) {
       return apiError(res, 400, 'Enter all nine player names.');
     }
@@ -95,7 +100,8 @@ app.post('/api/games', createLimiter, async (req, res) => {
     const { data, error } = await supabase.rpc('create_ttt_game', {
       p_names: normalizedNames,
       p_host_index: playerIndex ?? null,
-      p_host_token_hash: token ? hashToken(token) : null
+      p_host_token_hash: token ? hashToken(token) : null,
+      p_board_size: boardSize
     });
     if (error) {
       console.error('create_ttt_game failed:', error.message);
@@ -106,6 +112,7 @@ app.post('/api/games', createLimiter, async (req, res) => {
       roomCode: data.room_code,
       gameId: data.game_id,
       playerId: data.player_id,
+      boardSize: data.board_size,
       token
     });
   } catch (error) {
@@ -157,7 +164,7 @@ app.get('/api/game/:roomCode', async (req, res) => {
 
     const { data: game, error: gameError } = await supabase
       .from('games')
-      .select('id, room_code, status, day, winner_player_id, created_at')
+      .select('id, room_code, status, day, board_size, winner_player_id, created_at')
       .eq('room_code', roomCode)
       .maybeSingle();
 
@@ -167,7 +174,7 @@ app.get('/api/game/:roomCode', async (req, res) => {
     const [playersResult, eventsResult] = await Promise.all([
       supabase
         .from('players')
-        .select('id, seat_number, name, x, y, lives, ap, attack_range, is_alive')
+        .select('id, seat_number, name, x, y, lives, ap, attack_range, is_alive, spawned')
         .eq('game_id', game.id)
         .order('seat_number', { ascending: true }),
       supabase
