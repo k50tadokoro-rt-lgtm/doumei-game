@@ -6,6 +6,8 @@
   const SESSION_KEY = 'tankTurnTacticsSessionV1';
   const ACTION_COST = { move: 1, attack: 1, transfer: 1, extend: 2 };
   const $ = id => document.getElementById(id);
+  const I = window.I18N;
+  const t = (key, vars) => I.t(key, vars);
 
   const home = $('home');
   const game = $('game');
@@ -15,10 +17,7 @@
   let selectedAction = null;
   let pollHandle = null;
   let polling = false;
-
-  function escapeText(value) {
-    return String(value ?? '');
-  }
+  let lastPollTime = null;
 
   function initials(name) {
     const parts = String(name).trim().split(/\s+/).filter(Boolean);
@@ -46,7 +45,9 @@
     let body;
     try { body = await response.json(); }
     catch { body = {}; }
-    if (!response.ok) throw new Error(body.error || `Request failed (${response.status}).`);
+    if (!response.ok) {
+      throw new Error(body.error ? I.tError(body.error) : t('st.requestFailed', { code: response.status }));
+    }
     return body;
   }
 
@@ -96,7 +97,7 @@
       input.value = name;
       input.maxLength = 32;
       input.className = 'country-name';
-      input.setAttribute('aria-label', `Player ${index + 1} name`);
+      input.setAttribute('aria-label', `Player ${index + 1}`);
       input.addEventListener('input', refreshHostSelect);
       rosterInputs.appendChild(input);
     });
@@ -107,7 +108,11 @@
     const select = $('hostPlayer');
     const previous = select.value;
     const names = [...document.querySelectorAll('.country-name')].map(input => input.value.trim() || 'Player');
-    select.innerHTML = '<option value="">Spectate (do not play)</option>';
+    select.innerHTML = '';
+    const spectate = document.createElement('option');
+    spectate.value = '';
+    spectate.textContent = t('create.spectate');
+    select.appendChild(spectate);
     names.forEach((name, index) => {
       const option = document.createElement('option');
       option.value = String(index);
@@ -125,24 +130,24 @@
     const passcode = $('createPasscode').value;
 
     if (![10, 12, 15].includes(boardSize)) {
-      setStatus('hostStatus', 'Choose a board size.', true);
+      setStatus('hostStatus', t('st.chooseSize'), true);
       return;
     }
     if (playerIndex !== null && (passcode.length < 6 || passcode.length > 64)) {
-      setStatus('hostStatus', 'Choose a seat passcode of 6 to 64 characters.', true);
+      setStatus('hostStatus', t('st.passLen'), true);
       return;
     }
     if (names.some(name => !name || name.length > 32)) {
-      setStatus('hostStatus', 'Please enter all nine names (up to 32 characters each).', true);
+      setStatus('hostStatus', t('st.nineNames'), true);
       return;
     }
     if (new Set(names.map(name => name.toLocaleLowerCase('en'))).size !== 9) {
-      setStatus('hostStatus', 'Each player name must be unique.', true);
+      setStatus('hostStatus', t('st.unique'), true);
       return;
     }
 
     button.disabled = true;
-    setStatus('hostStatus', 'Creating your game…');
+    setStatus('hostStatus', t('st.creating'));
     try {
       const result = await requestJSON('/api/games', {
         method: 'POST',
@@ -157,9 +162,9 @@
       saveSession(newSession);
       selectedAction = null;
       await refreshGame(false, true);
-      setStatus('hostStatus', 'Game created. Share the room code with your friends.');
+      setStatus('hostStatus', t('st.created'));
     } catch (error) {
-      setStatus('hostStatus', error.message || 'Could not create the game.', true);
+      setStatus('hostStatus', error.message || t('st.createFail'), true);
     } finally {
       button.disabled = false;
     }
@@ -171,20 +176,20 @@
     const name = $('joinName').value.trim();
     const passcode = $('joinPasscode').value;
     if (!/^[A-Z0-9]{6}$/.test(roomCode)) {
-      setStatus('joinStatus', 'Enter the six-character room code.', true);
+      setStatus('joinStatus', t('st.codeNeeded'), true);
       return;
     }
     if (!name) {
-      setStatus('joinStatus', 'Enter your assigned player name.', true);
+      setStatus('joinStatus', t('st.nameNeeded'), true);
       return;
     }
     if (passcode.length < 6 || passcode.length > 64) {
-      setStatus('joinStatus', 'Choose a seat passcode of 6 to 64 characters.', true);
+      setStatus('joinStatus', t('st.passLen'), true);
       return;
     }
 
     button.disabled = true;
-    setStatus('joinStatus', 'Joining game…');
+    setStatus('joinStatus', t('st.joining'));
     try {
       const result = await requestJSON('/api/join', {
         method: 'POST',
@@ -193,9 +198,9 @@
       saveSession({ roomCode: result.roomCode, playerId: result.playerId, token: result.token, name });
       selectedAction = null;
       await refreshGame(false, true);
-      setStatus('joinStatus', 'You joined the match. Remember your passcode to log back in elsewhere.');
+      setStatus('joinStatus', t('st.joined'));
     } catch (error) {
-      setStatus('joinStatus', error.message || 'Could not join the game.', true);
+      setStatus('joinStatus', error.message || t('st.joinFail'), true);
     } finally {
       button.disabled = false;
     }
@@ -207,12 +212,12 @@
     const name = $('joinName').value.trim();
     const passcode = $('joinPasscode').value;
     if (!/^[A-Z0-9]{6}$/.test(roomCode) || !name || !passcode) {
-      setStatus('joinStatus', 'Enter the room code, your player name and your seat passcode.', true);
+      setStatus('joinStatus', t('st.loginMissing'), true);
       return;
     }
 
     button.disabled = true;
-    setStatus('joinStatus', 'Logging back in…');
+    setStatus('joinStatus', t('st.loggingIn'));
     try {
       const result = await requestJSON('/api/login', {
         method: 'POST',
@@ -221,9 +226,9 @@
       saveSession({ roomCode: result.roomCode, playerId: result.playerId, token: result.token, name });
       selectedAction = null;
       await refreshGame(false, true);
-      setStatus('joinStatus', 'Welcome back.');
+      setStatus('joinStatus', t('st.loginOk'));
     } catch (error) {
-      setStatus('joinStatus', error.message || 'Could not log back in.', true);
+      setStatus('joinStatus', error.message || t('st.loginFail'), true);
     } finally {
       button.disabled = false;
     }
@@ -233,13 +238,19 @@
     const saved = loadSavedSession();
     if (!saved) return;
     session = saved;
-    setStatus('hostStatus', 'Reconnecting to your saved game…');
+    setStatus('hostStatus', t('st.reconnecting'));
     try {
       await refreshGame(false, true);
-      setStatus('hostStatus', 'Reconnected to your saved game.');
+      setStatus('hostStatus', t('st.reconnected'));
     } catch (error) {
-      setStatus('hostStatus', `Could not reconnect: ${error.message}. Check your connection and reload.`, true);
+      setStatus('hostStatus', t('st.reconnectFail', { msg: error.message }), true);
     }
+  }
+
+  function setPollStatus() {
+    $('pollStatus').textContent = lastPollTime
+      ? t('poll.ok', { time: lastPollTime })
+      : t('poll.default');
   }
 
   async function refreshGame(silent = false, enterGame = false) {
@@ -250,11 +261,12 @@
       gameData = data;
       renderGame();
       if (enterGame || !game.classList.contains('hidden')) showGameView();
-      $('pollStatus').textContent = `Saved online · Last refreshed ${new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Tokyo' })} JST`;
+      lastPollTime = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Tokyo' });
+      setPollStatus();
       if (enterGame || !pollHandle) startPolling();
     } catch (error) {
-      if (!silent) showNotice(error.message || 'Could not load the game.', true);
-      $('pollStatus').textContent = `Connection issue: ${error.message || 'Could not refresh game data.'}`;
+      if (!silent) showNotice(error.message || t('st.loadFail'), true);
+      $('pollStatus').textContent = t('poll.issue', { msg: error.message || t('st.refreshFail') });
       if (enterGame) throw error;
     } finally {
       polling = false;
@@ -304,7 +316,7 @@
     const board = $('board');
     board.innerHTML = '';
     board.style.gridTemplateColumns = `repeat(${size}, minmax(0, 1fr))`;
-    board.setAttribute('aria-label', `${size} by ${size} game board`);
+    board.setAttribute('aria-label', t('board.aria', { n: size }));
 
     const playersByPosition = new Map();
     for (const player of gameData.players) {
@@ -319,7 +331,7 @@
         cell.className = 'cell';
         cell.setAttribute('role', 'gridcell');
         const coord = `${String.fromCharCode(65 + x)}${y + 1}`;
-        cell.setAttribute('aria-label', occupant ? `${occupant.name} at ${coord}` : `Empty square ${coord}`);
+        cell.setAttribute('aria-label', occupant ? t('board.at', { name: occupant.name, c: coord }) : t('board.empty', { c: coord }));
         if (boardCellIsTarget(x, y, occupant)) cell.classList.add('target');
 
         if (occupant) {
@@ -348,7 +360,7 @@
     }
     if (selectedAction === 'attack' || selectedAction === 'transfer') {
       if (!occupant) {
-        showNotice('Select a player token on the map.', true);
+        showNotice(t('act.selectToken'), true);
         return;
       }
       await sendAction({ type: selectedAction, targetId: occupant.id });
@@ -358,7 +370,7 @@
   async function sendAction(action) {
     const player = myPlayer();
     if (!player || !session?.token || !session?.playerId) {
-      showNotice('You are spectating. Choose a player seat to take actions.', true);
+      showNotice(t('act.spectatingNotice'), true);
       return;
     }
     try {
@@ -372,12 +384,31 @@
         })
       });
       selectedAction = null;
-      showNotice('Action completed.');
+      showNotice(t('act.done'));
       await refreshGame(true);
     } catch (error) {
-      showNotice(error.message || 'That action could not be completed.', true);
+      showNotice(error.message || t('act.fail'), true);
       await refreshGame(true);
     }
+  }
+
+  async function sendJuryVote(targetId) {
+    if (!session?.token || !session?.playerId) return;
+    try {
+      await requestJSON('/api/jury-vote', {
+        method: 'POST',
+        body: JSON.stringify({
+          roomCode: session.roomCode,
+          playerId: session.playerId,
+          token: session.token,
+          targetId
+        })
+      });
+      showNotice(t('jury.cast'));
+    } catch (error) {
+      showNotice(error.message || t('jury.fail'), true);
+    }
+    await refreshGame(true);
   }
 
   function renderPlayers() {
@@ -396,30 +427,13 @@
       name.textContent = player.name;
       const meta = document.createElement('span');
       meta.className = 'pmeta';
-      if (waiting) meta.textContent = 'Not joined yet';
-      else meta.textContent = player.is_alive ? `${player.ap} AP · ${player.lives} ♥ · R${player.attack_range}` : 'JURY';
+      if (waiting) meta.textContent = t('list.waiting');
+      else meta.textContent = player.is_alive
+        ? t('list.stats', { ap: player.ap, lives: player.lives, range: player.attack_range })
+        : t('list.jury');
       row.append(swatch, name, meta);
       list.appendChild(row);
     }
-  }
-
-  async function sendJuryVote(targetId) {
-    if (!session?.token || !session?.playerId) return;
-    try {
-      await requestJSON('/api/jury-vote', {
-        method: 'POST',
-        body: JSON.stringify({
-          roomCode: session.roomCode,
-          playerId: session.playerId,
-          token: session.token,
-          targetId
-        })
-      });
-      showNotice('Jury vote cast.');
-    } catch (error) {
-      showNotice(error.message || 'That vote could not be cast.', true);
-    }
-    await refreshGame(true);
   }
 
   function renderJury() {
@@ -431,9 +445,7 @@
     if (!isJuror || finished) return;
 
     const votedToday = (me.last_jury_vote_day || 0) >= gameData.game.day;
-    $('juryHint').textContent = votedToday
-      ? 'You have used today\'s jury vote. You can vote again after the next 20:00 JST reset.'
-      : 'Give 1 AP to a living player. One vote per day, and votes are public.';
+    $('juryHint').textContent = votedToday ? t('jury.used') : t('jury.hint');
 
     const list = $('juryList');
     list.innerHTML = '';
@@ -446,7 +458,7 @@
       const button = document.createElement('button');
       button.type = 'button';
       button.className = 'btn subtle';
-      button.textContent = 'Give 1 AP';
+      button.textContent = t('jury.give');
       button.disabled = votedToday;
       button.addEventListener('click', () => sendJuryVote(player.id));
       row.append(name, button);
@@ -456,7 +468,7 @@
 
   async function startGame() {
     const joined = joinedPlayers().length;
-    if (!window.confirm(`Start the match with ${joined} players? Seats that have not joined will be locked out.`)) return;
+    if (!window.confirm(t('lobby.confirm', { n: joined }))) return;
     const button = $('startGame');
     button.disabled = true;
     try {
@@ -468,9 +480,9 @@
           token: session.token
         })
       });
-      showNotice('The match has started.');
+      showNotice(t('lobby.started'));
     } catch (error) {
-      showNotice(error.message || 'Could not start the match.', true);
+      showNotice(error.message || t('lobby.startFail'), true);
     }
     await refreshGame(true);
   }
@@ -485,16 +497,10 @@
     const joined = joinedPlayers().length;
     const hostId = gameData.game.host_player_id;
     const mayStart = !!me && me.spawned !== false && (!hostId || hostId === me.id);
-    const total = gameData.players.length;
 
-    let text = `${joined} of ${total} players have joined. Share the room code so the rest can join.`;
-    if (mayStart) {
-      text += joined < 2
-        ? ' You need at least 2 players before you can start.'
-        : ' When everyone is in, press Start. After that, no one else can join.';
-    } else {
-      text += ' Waiting for the host to start the match.';
-    }
+    let text = t('lobby.joined', { n: joined, total: gameData.players.length });
+    if (mayStart) text += joined < 2 ? t('lobby.need2') : t('lobby.press');
+    else text += t('lobby.waitHost');
     $('lobbyHint').textContent = text;
 
     const button = $('startGame');
@@ -517,11 +523,15 @@
       const time = document.createElement('time');
       time.textContent = formatJST(entry.created_at);
       const message = document.createElement('span');
-      message.textContent = entry.message;
+      message.textContent = I.tEvent(entry.message);
       row.append(time, message);
       log.appendChild(row);
     }
     log.scrollTop = log.scrollHeight;
+  }
+
+  function actionLabel(type) {
+    return t(`act.${type}`).toUpperCase();
   }
 
   function renderGame() {
@@ -530,12 +540,14 @@
     const size = boardSize();
     const roomCode = gameData.game.room_code;
     $('roomCodeDisplay').textContent = roomCode;
-    $('boardTitle').textContent = `${size} × ${size} map`;
+    $('boardTitle').textContent = t('board.title', { n: size });
     $('dayValue').textContent = String(gameData.game.day);
     $('aliveValue').textContent = `${alivePlayers().length} / ${joinedPlayers().length}`;
-    $('connectionValue').textContent = currentPlayer ? currentPlayer.name : 'Spectator';
-    $('activeName').textContent = currentPlayer ? currentPlayer.name : 'Spectating';
-    $('activeState').textContent = currentPlayer ? (currentPlayer.is_alive ? 'Active' : 'Eliminated') : 'Observer';
+    $('connectionValue').textContent = currentPlayer ? currentPlayer.name : t('stat.spectator');
+    $('activeName').textContent = currentPlayer ? currentPlayer.name : t('me.spectating');
+    $('activeState').textContent = currentPlayer
+      ? (currentPlayer.is_alive ? t('me.active') : t('me.eliminated'))
+      : t('me.observer');
     $('activeAP').textContent = currentPlayer ? currentPlayer.ap : '—';
     $('activeLives').textContent = currentPlayer ? currentPlayer.lives : '—';
     $('activeRange').textContent = currentPlayer ? currentPlayer.attack_range : '—';
@@ -550,36 +562,37 @@
     });
     $('cancelAction').disabled = !selectedAction;
 
+    const hint = $('actionHint');
     if (inLobby) {
-      $('actionHint').textContent = 'The match has not started yet. Actions unlock when the host presses Start.';
+      hint.textContent = t('act.hintLobby');
     } else if (!currentPlayer) {
-      $('actionHint').textContent = 'You are spectating. Join an unclaimed player seat to take actions.';
+      hint.textContent = t('act.hintSpectating');
     } else if (!currentPlayer.is_alive) {
-      $('actionHint').textContent = 'Your country has been eliminated. You are on the jury: vote below.';
+      hint.textContent = t('act.hintOut');
     } else if (matchFinished) {
-      $('actionHint').textContent = 'The match is over.';
+      hint.textContent = t('act.hintOver');
     } else if (currentPlayer.ap < 1) {
-      $('actionHint').textContent = 'You have no AP. Living players receive 1 AP every day at 20:00 JST.';
+      hint.textContent = t('act.hintNoAp');
     } else if (selectedAction === 'move') {
-      $('actionHint').textContent = 'Click an adjacent empty square (up, down, left or right).';
+      hint.textContent = t('act.hintMove');
     } else if (selectedAction === 'attack') {
-      $('actionHint').textContent = `Click a living player within your range (${currentPlayer.attack_range}).`;
+      hint.textContent = t('act.hintAttack', { range: currentPlayer.attack_range });
     } else if (selectedAction === 'transfer') {
-      $('actionHint').textContent = `Click a living player within your range (${currentPlayer.attack_range}) to give them 1 AP.`;
+      hint.textContent = t('act.hintTransfer', { range: currentPlayer.attack_range });
     } else if (currentPlayer.ap < 2) {
-      $('actionHint').textContent = 'Select an action. Extending your range needs 2 AP.';
+      hint.textContent = t('act.hintExtend1');
     } else {
-      $('actionHint').textContent = 'Select an action. Extending your range costs 2 AP; everything else costs 1.';
+      hint.textContent = t('act.hintExtend2');
     }
 
     $('boardHint').textContent = selectedAction
-      ? `Action selected: ${selectedAction.toUpperCase()} — choose a valid square or target.`
-      : 'Choose an action, then select a square or player.';
+      ? t('board.hintSelected', { action: actionLabel(selectedAction) })
+      : t('board.hint');
 
     const winnerBanner = $('winnerBanner');
     if (gameData.game.winner_player_id) {
       const winner = gameData.players.find(player => player.id === gameData.game.winner_player_id);
-      winnerBanner.textContent = `${winner ? winner.name : 'A country'} wins — last player standing!`;
+      winnerBanner.textContent = t('win.banner', { name: winner ? winner.name : t('win.aCountry') });
       winnerBanner.classList.remove('hidden');
     } else {
       winnerBanner.classList.add('hidden');
@@ -595,8 +608,9 @@
   function chooseAction(type) {
     const player = myPlayer();
     const finished = gameData?.game?.status === 'finished';
+    const inLobby = gameData?.game?.status === 'waiting';
     const cost = ACTION_COST[type] || 1;
-    if (!player || !player.is_alive || player.ap < cost || finished) return;
+    if (!player || !player.is_alive || player.ap < cost || finished || inLobby) return;
     if (type === 'extend') {
       selectedAction = null;
       sendAction({ type: 'extend' });
@@ -611,9 +625,9 @@
     if (!code) return;
     try {
       await navigator.clipboard.writeText(code);
-      showNotice('Room code copied.');
+      showNotice(t('copy.done'));
     } catch {
-      showNotice(`Room code: ${code}`);
+      showNotice(t('copy.show', { code }));
     }
   }
 
@@ -624,6 +638,7 @@
   $('copyRoom').addEventListener('click', copyRoomCode);
   $('backHome').addEventListener('click', showHomeView);
   $('cancelAction').addEventListener('click', () => { selectedAction = null; if (gameData) renderGame(); });
+  $('langToggle').addEventListener('click', () => I.setLang(I.getLang() === 'ja' ? 'en' : 'ja'));
   document.querySelectorAll('[data-action]').forEach(button => {
     button.addEventListener('click', () => chooseAction(button.dataset.action));
   });
@@ -631,6 +646,14 @@
     event.target.value = event.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
   });
 
+  // Re-draw everything that is built in JavaScript when the language changes.
+  window.addEventListener('langchange', () => {
+    refreshHostSelect();
+    setPollStatus();
+    if (gameData) renderGame();
+  });
+
+  I.apply();
   buildRosterInputs();
   reconnectSavedSession();
 })();

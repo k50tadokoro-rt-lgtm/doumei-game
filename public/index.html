@@ -7,6 +7,7 @@
   <meta name="description" content="A persistent daily strategy match for up to nine players.">
   <title>Tank Turn Tactics — Alliance</title>
   <link rel="stylesheet" href="/style.css">
+  <script src="/i18n.js" defer></script>
   <script src="/app.js" defer></script>
 </head>
 <body>
@@ -15,150 +16,153 @@
       <div class="brand">
         <div class="brand-mark">TTT</div>
         <div>
-          <div class="eyebrow">A daily strategy game</div>
+          <div class="eyebrow" data-i18n="hdr.eyebrow">A daily strategy game</div>
           <h1>Tank Turn Tactics</h1>
-          <div class="subhead">A persistent match for up to 9 players · 10, 12 or 15 squares wide</div>
+          <div class="subhead" data-i18n="hdr.sub">A persistent match for up to 9 players · 10, 12 or 15 squares wide</div>
         </div>
       </div>
-      <div class="header-pill">Browser multiplayer · 9 seats</div>
+      <div class="header-actions">
+        <button id="langToggle" class="btn subtle" type="button" aria-label="Language / 言語">日本語</button>
+        <div class="header-pill" data-i18n="hdr.pill">Browser multiplayer · 9 seats</div>
+      </div>
     </header>
 
     <main id="home">
       <div class="home-grid">
         <section class="card">
-          <div class="eyebrow">Set up a match</div>
-          <h2 class="section-title">Create a new game</h2>
-          <p class="muted small">Choose all nine countries / player names. Your friends can claim their seats with the room code and their exact names. Seats nobody claims never appear on the map. Once you press Start, no one else can join.</p>
-          <label class="field-label">Players (edit the names)</label>
+          <div class="eyebrow" data-i18n="create.eyebrow">Set up a match</div>
+          <h2 class="section-title" data-i18n="create.title">Create a new game</h2>
+          <p class="muted small" data-i18n="create.desc">Choose all nine countries / player names. Your friends can claim their seats with the room code and their exact names. Seats nobody claims never appear on the map. Once you press Start, no one else can join.</p>
+          <label class="field-label" data-i18n="create.players">Players (edit the names)</label>
           <div class="roster-inputs" id="rosterInputs"></div>
-          <label class="field-label" for="boardSize">Board size</label>
+          <label class="field-label" for="boardSize" data-i18n="create.size">Board size</label>
           <select id="boardSize">
-            <option value="10">10 × 10 (small)</option>
-            <option value="12">12 × 12 (medium)</option>
-            <option value="15" selected>15 × 15 (large)</option>
+            <option value="10" data-i18n="create.size10">10 × 10 (small)</option>
+            <option value="12" data-i18n="create.size12">12 × 12 (medium)</option>
+            <option value="15" selected data-i18n="create.size15">15 × 15 (large)</option>
           </select>
-          <label class="field-label" for="hostPlayer">Your seat</label>
+          <label class="field-label" for="hostPlayer" data-i18n="create.seat">Your seat</label>
           <select id="hostPlayer">
-            <option value="">Spectate (do not play)</option>
+            <option value="" data-i18n="create.spectate">Spectate (do not play)</option>
           </select>
-          <label class="field-label" for="createPasscode">Seat passcode (needed to play)</label>
-          <input id="createPasscode" type="password" autocomplete="new-password" maxlength="64" placeholder="6+ characters. Lets you log back in on another device">
-          <button id="createRoom" class="btn primary full">Create game</button>
+          <label class="field-label" for="createPasscode" data-i18n="create.passLabel">Seat passcode (needed to play)</label>
+          <input id="createPasscode" type="password" autocomplete="new-password" maxlength="64" placeholder="6+ characters. Lets you log back in on another device" data-i18n-ph="create.passPh">
+          <button id="createRoom" class="btn primary full" data-i18n="create.btn">Create game</button>
           <div id="hostStatus" class="status-line" aria-live="polite"></div>
         </section>
 
         <section class="card">
-          <div class="eyebrow">Join your friends</div>
-          <h2 class="section-title">Join an existing game</h2>
-          <p class="muted small">Enter the room code and the exact player name your group assigned to you. You appear on the map when you join. You can only join before the host starts the match.</p>
-          <label class="field-label" for="roomCodeInput">Room code</label>
-          <input id="roomCodeInput" autocomplete="off" maxlength="6" placeholder="e.g. 7KQ4PD">
-          <label class="field-label" for="joinName">Your country / player name</label>
-          <input id="joinName" autocomplete="off" maxlength="32" placeholder="e.g. Japan">
-          <label class="field-label" for="joinPasscode">Seat passcode</label>
-          <input id="joinPasscode" type="password" autocomplete="off" maxlength="64" placeholder="New seat: choose one (6+). Returning: enter yours">
-          <button id="joinRoom" class="btn primary full">Join game (new seat)</button>
-          <button id="loginRoom" class="btn subtle full">Already joined? Log back in</button>
+          <div class="eyebrow" data-i18n="join.eyebrow">Join your friends</div>
+          <h2 class="section-title" data-i18n="join.title">Join an existing game</h2>
+          <p class="muted small" data-i18n="join.desc">Enter the room code and the exact player name your group assigned to you. You appear on the map when you join. You can only join before the host starts the match.</p>
+          <label class="field-label" for="roomCodeInput" data-i18n="join.code">Room code</label>
+          <input id="roomCodeInput" autocomplete="off" maxlength="6" placeholder="e.g. 7KQ4PD" data-i18n-ph="join.codePh">
+          <label class="field-label" for="joinName" data-i18n="join.name">Your country / player name</label>
+          <input id="joinName" autocomplete="off" maxlength="32" placeholder="e.g. Japan" data-i18n-ph="join.namePh">
+          <label class="field-label" for="joinPasscode" data-i18n="join.pass">Seat passcode</label>
+          <input id="joinPasscode" type="password" autocomplete="off" maxlength="64" placeholder="New seat: choose one (6+). Returning: enter yours" data-i18n-ph="join.passPh">
+          <button id="joinRoom" class="btn primary full" data-i18n="join.btn">Join game (new seat)</button>
+          <button id="loginRoom" class="btn subtle full" data-i18n="join.loginBtn">Already joined? Log back in</button>
           <div id="joinStatus" class="status-line" aria-live="polite"></div>
-          <div class="note small">Each seat can only be claimed once. Remember your passcode: it lets you log back in from another device or browser, and it cannot be recovered if you forget it.</div>
+          <div class="note small" data-i18n="join.note">Each seat can only be claimed once. Remember your passcode: it lets you log back in from another device or browser, and it cannot be recovered if you forget it.</div>
         </section>
       </div>
 
       <section class="card rules-card">
-        <div class="eyebrow">Core rules</div>
-        <h2 class="section-title">Action Points. Four choices. Last player standing.</h2>
+        <div class="eyebrow" data-i18n="rules.eyebrow">Core rules</div>
+        <h2 class="section-title" data-i18n="rules.title">Action Points. Four choices. Last player standing.</h2>
         <div class="rule-list">
-          <div class="rule"><strong>Move</strong><span>Spend 1 AP to move one square up, down, left or right.</span></div>
-          <div class="rule"><strong>Attack</strong><span>Spend 1 AP to hit a player within your range. Three hits eliminate a player.</span></div>
-          <div class="rule"><strong>Transfer</strong><span>Spend 1 AP to give 1 AP to another player within your range.</span></div>
-          <div class="rule"><strong>Extend range</strong><span>Spend 2 AP to permanently increase your range by one square.</span></div>
+          <div class="rule"><strong data-i18n="rules.move">Move</strong><span data-i18n="rules.moveDesc">Spend 1 AP to move one square up, down, left or right.</span></div>
+          <div class="rule"><strong data-i18n="rules.attack">Attack</strong><span data-i18n="rules.attackDesc">Spend 1 AP to hit a player within your range. Three hits eliminate a player.</span></div>
+          <div class="rule"><strong data-i18n="rules.transfer">Transfer</strong><span data-i18n="rules.transferDesc">Spend 1 AP to give 1 AP to another player within your range.</span></div>
+          <div class="rule"><strong data-i18n="rules.extend">Extend range</strong><span data-i18n="rules.extendDesc">Spend 2 AP to permanently increase your range by one square.</span></div>
         </div>
-        <p class="footer-note">Each player starts with 1 AP, 3 lives and range 2 when they claim their seat, and appears on the map as far as possible from the other players. Seats nobody claims never appear. Range includes horizontal, vertical and diagonal squares (square / Chebyshev distance). Movement is orthogonal only. Players cannot occupy the same square. Eliminated players join the jury: once per day each juror can give 1 AP to a living player, and votes show in the log. Living players receive 1 AP every day at 20:00 Japan time. The database applies this even when everyone is offline.</p>
+        <p class="footer-note" data-i18n="rules.foot">Each player starts with 1 AP, 3 lives and range 2 when they claim their seat, and appears on the map as far as possible from the other players. Seats nobody claims never appear. Range includes horizontal, vertical and diagonal squares (square / Chebyshev distance). Movement is orthogonal only. Players cannot occupy the same square. Eliminated players join the jury: once per day each juror can give 1 AP to a living player, and votes show in the log. Living players receive 1 AP every day at 20:00 Japan time. The database applies this even when everyone is offline.</p>
       </section>
     </main>
 
     <main id="game" class="hidden">
       <div class="game-head">
         <div>
-          <div class="eyebrow">Persistent match</div>
-          <h2 class="game-title">Alliance battlefield</h2>
+          <div class="eyebrow" data-i18n="game.eyebrow">Persistent match</div>
+          <h2 class="game-title" data-i18n="game.title">Alliance battlefield</h2>
         </div>
         <div class="room-tools">
-          <div class="room-code"><span class="muted small">ROOM</span><code id="roomCodeDisplay"></code></div>
-          <button id="copyRoom" class="btn subtle">Copy code</button>
-          <button id="backHome" class="btn subtle">Back</button>
+          <div class="room-code"><span class="muted small" data-i18n="game.room">ROOM</span><code id="roomCodeDisplay"></code></div>
+          <button id="copyRoom" class="btn subtle" data-i18n="game.copy">Copy code</button>
+          <button id="backHome" class="btn subtle" data-i18n="game.back">Back</button>
         </div>
       </div>
 
       <div id="winnerBanner" class="winner hidden"></div>
       <section id="lobbyCard" class="card hidden">
-        <div class="eyebrow">Lobby</div>
-        <h3 class="section-title">Waiting to start</h3>
+        <div class="eyebrow" data-i18n="lobby.eyebrow">Lobby</div>
+        <h3 class="section-title" data-i18n="lobby.title">Waiting to start</h3>
         <div id="lobbyHint" class="action-hint"></div>
-        <button id="startGame" class="btn primary full">Start match</button>
+        <button id="startGame" class="btn primary full" data-i18n="lobby.start">Start match</button>
       </section>
       <div class="stats">
-        <div class="stat"><div class="stat-label">Day</div><div id="dayValue" class="stat-value">1</div></div>
-        <div class="stat"><div class="stat-label">Daily AP</div><div class="stat-value">20:00 JST</div></div>
-        <div class="stat"><div class="stat-label">Alive / joined</div><div id="aliveValue" class="stat-value">0 / 0</div></div>
-        <div class="stat"><div class="stat-label">Your seat</div><div id="connectionValue" class="stat-value">Spectator</div></div>
+        <div class="stat"><div class="stat-label" data-i18n="stat.day">Day</div><div id="dayValue" class="stat-value">1</div></div>
+        <div class="stat"><div class="stat-label" data-i18n="stat.dailyAp">Daily AP</div><div class="stat-value">20:00 JST</div></div>
+        <div class="stat"><div class="stat-label" data-i18n="stat.alive">Alive / joined</div><div id="aliveValue" class="stat-value">0 / 0</div></div>
+        <div class="stat"><div class="stat-label" data-i18n="stat.seat">Your seat</div><div id="connectionValue" class="stat-value">Spectator</div></div>
       </div>
 
       <div class="game-layout">
         <section class="card board-card">
           <div class="board-top">
             <h2 id="boardTitle">Map</h2>
-            <div id="boardHint" class="board-hint">Choose an action, then select a square or player.</div>
+            <div id="boardHint" class="board-hint" data-i18n="board.hint">Choose an action, then select a square or player.</div>
           </div>
           <div id="board" class="board" role="grid" aria-label="Game board"></div>
-          <div class="footer-note">Coordinates start at A1 in the top-left. Player markers show the first two letters of each name.</div>
+          <div class="footer-note" data-i18n="board.foot">Coordinates start at A1 in the top-left. Player markers show the first two letters of each name.</div>
         </section>
 
         <aside class="side-stack">
           <section class="card active-card">
-            <div class="eyebrow">Your country</div>
+            <div class="eyebrow" data-i18n="me.eyebrow">Your country</div>
             <div class="active-top"><h3 id="activeName" class="active-name">Not connected</h3><span id="activeState" class="pill">Waiting</span></div>
             <div class="player-metrics">
-              <div class="metric"><span>Action points</span><b id="activeAP">—</b></div>
-              <div class="metric"><span>Lives</span><b id="activeLives">—</b></div>
-              <div class="metric"><span>Range</span><b id="activeRange">—</b></div>
+              <div class="metric"><span data-i18n="me.ap">Action points</span><b id="activeAP">—</b></div>
+              <div class="metric"><span data-i18n="me.lives">Lives</span><b id="activeLives">—</b></div>
+              <div class="metric"><span data-i18n="me.range">Range</span><b id="activeRange">—</b></div>
             </div>
-            <div class="eyebrow action-eyebrow">Choose an action · Extend costs 2 AP, others 1 AP</div>
+            <div class="eyebrow action-eyebrow" data-i18n="act.eyebrow">Choose an action · Extend costs 2 AP, others 1 AP</div>
             <div class="action-grid">
-              <button class="btn action-btn" data-action="move"><span class="action-title">Move</span><span class="action-sub">1 AP · 1 square</span></button>
-              <button class="btn action-btn" data-action="attack"><span class="action-title">Attack</span><span class="action-sub">1 AP · 1 hit</span></button>
-              <button class="btn action-btn" data-action="transfer"><span class="action-title">Transfer AP</span><span class="action-sub">1 AP · give 1 AP</span></button>
-              <button class="btn action-btn" data-action="extend"><span class="action-title">Extend range</span><span class="action-sub">2 AP · range +1</span></button>
+              <button class="btn action-btn" data-action="move"><span class="action-title" data-i18n="act.move">Move</span><span class="action-sub" data-i18n="act.moveSub">1 AP · 1 square</span></button>
+              <button class="btn action-btn" data-action="attack"><span class="action-title" data-i18n="act.attack">Attack</span><span class="action-sub" data-i18n="act.attackSub">1 AP · 1 hit</span></button>
+              <button class="btn action-btn" data-action="transfer"><span class="action-title" data-i18n="act.transfer">Transfer AP</span><span class="action-sub" data-i18n="act.transferSub">1 AP · give 1 AP</span></button>
+              <button class="btn action-btn" data-action="extend"><span class="action-title" data-i18n="act.extend">Extend range</span><span class="action-sub" data-i18n="act.extendSub">2 AP · range +1</span></button>
             </div>
-            <div id="actionHint" class="action-hint">Select an action to begin. You need at least 1 AP.</div>
-            <button id="cancelAction" class="btn subtle full cancel-btn">Cancel action</button>
+            <div id="actionHint" class="action-hint" data-i18n="act.hintDefault">Select an action to begin. You need at least 1 AP.</div>
+            <button id="cancelAction" class="btn subtle full cancel-btn" data-i18n="act.cancel">Cancel action</button>
             <div id="gameNotice" class="status-line" aria-live="polite"></div>
           </section>
 
           <section id="juryCard" class="card hidden">
-            <div class="eyebrow">Eliminated players</div>
-            <h3 class="section-title">Jury vote</h3>
-            <div id="juryHint" class="action-hint">Give 1 AP to a living player. One vote per day, and votes are public.</div>
+            <div class="eyebrow" data-i18n="jury.eyebrow">Eliminated players</div>
+            <h3 class="section-title" data-i18n="jury.title">Jury vote</h3>
+            <div id="juryHint" class="action-hint" data-i18n="jury.hint">Give 1 AP to a living player. One vote per day, and votes are public.</div>
             <div id="juryList" class="players-list"></div>
           </section>
 
           <section class="card">
-            <div class="eyebrow">The countries</div>
-            <h3 class="section-title">Players</h3>
+            <div class="eyebrow" data-i18n="list.eyebrow">The countries</div>
+            <h3 class="section-title" data-i18n="list.title">Players</h3>
             <div id="playersList" class="players-list"></div>
           </section>
 
           <section class="card">
-            <div class="eyebrow">Recent activity</div>
-            <h3 class="section-title">Action log</h3>
+            <div class="eyebrow" data-i18n="log.eyebrow">Recent activity</div>
+            <h3 class="section-title" data-i18n="log.title">Action log</h3>
             <div id="eventLog" class="log"></div>
           </section>
         </aside>
       </div>
-      <div id="pollStatus" class="footer-note" aria-live="polite">Game data is saved to the server.</div>
+      <div id="pollStatus" class="footer-note" aria-live="polite" data-i18n="poll.default">Game data is saved to the server.</div>
     </main>
 
-    <footer class="site-footer">Tank Turn Tactics · Your match is stored online. No player needs to stay online for the daily AP update.</footer>
+    <footer class="site-footer" data-i18n="footer">Tank Turn Tactics · Your match is stored online. No player needs to stay online for the daily AP update.</footer>
   </div>
 </body>
 </html>
