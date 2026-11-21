@@ -278,8 +278,9 @@
   }
 
   // A player is "on the map" only after their seat has been claimed.
+  // Nobody is placed on the map while the game is still in the lobby.
   function onMap(player) {
-    return player.spawned !== false && player.is_alive;
+    return gameData?.game?.status !== 'waiting' && player.spawned !== false && player.is_alive;
   }
 
   function myPlayer() {
@@ -288,6 +289,7 @@
   }
 
   function alivePlayers() {
+    if (gameData?.game?.status === 'waiting') return joinedPlayers();
     return (gameData?.players || []).filter(onMap);
   }
 

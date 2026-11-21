@@ -12,7 +12,7 @@
 
     'create.eyebrow': { en: 'Set up a match', ja: '対戦を作る' },
     'create.title': { en: 'Create a new game', ja: '新しいゲームを作成' },
-    'create.desc': { en: 'Choose all nine countries / player names. Your friends can claim their seats with the room code and their exact names. Seats nobody claims never appear on the map. Once you press Start, no one else can join.', ja: '9つの国名・プレイヤー名を決めてください。友達はルームコードと正確な名前で席に参加できます。誰も参加しなかった席はマップに現れません。開始ボタンを押すと、他の人は参加できなくなります。' },
+    'create.desc': { en: 'Choose all nine countries / player names. Your friends can claim their seats with the room code and their exact names. Seats nobody claims never appear on the map. Nobody has a position until you press Start: then everyone spawns at random, and no one else can join.', ja: '9つの国名・プレイヤー名を決めてください。友達はルームコードと正確な名前で席に参加できます。誰も参加しなかった席はマップに現れません。開始ボタンを押すまで誰の位置も決まりません。開始時に全員がランダムな位置に出現し、その後は誰も参加できません。' },
     'create.players': { en: 'Players (edit the names)', ja: 'プレイヤー(名前を編集)' },
     'create.size': { en: 'Board size', ja: '盤面サイズ' },
     'create.size10': { en: '10 × 10 (small)', ja: '10 × 10(小)' },
@@ -26,7 +26,7 @@
 
     'join.eyebrow': { en: 'Join your friends', ja: '友達の対戦に参加' },
     'join.title': { en: 'Join an existing game', ja: '既存のゲームに参加' },
-    'join.desc': { en: 'Enter the room code and the exact player name your group assigned to you. You appear on the map when you join. You can only join before the host starts the match.', ja: 'ルームコードと、グループで割り当てられた正確なプレイヤー名を入力してください。参加するとマップに現れます。参加できるのはホストが開始する前だけです。' },
+    'join.desc': { en: 'Enter the room code and the exact player name your group assigned to you. You will not know where you spawn until the host starts the match, and you can only join before that.', ja: 'ルームコードと、グループで割り当てられた正確なプレイヤー名を入力してください。出現位置はホストが開始するまでわかりません。参加できるのは開始前だけです。' },
     'join.code': { en: 'Room code', ja: 'ルームコード' },
     'join.codePh': { en: 'e.g. 7KQ4PD', ja: '例: 7KQ4PD' },
     'join.name': { en: 'Your country / player name', ja: 'あなたの国名・プレイヤー名' },
@@ -47,7 +47,7 @@
     'rules.transferDesc': { en: 'Spend 1 AP to give 1 AP to another player within your range.', ja: '1APを使って、射程内の別のプレイヤーに1APを渡します。' },
     'rules.extend': { en: 'Extend range', ja: '射程を伸ばす' },
     'rules.extendDesc': { en: 'Spend 2 AP to permanently increase your range by one square.', ja: '2APで射程を恒久的に1マス伸ばします。' },
-    'rules.foot': { en: 'Each player starts with 1 AP, 3 lives and range 2 when they claim their seat, and appears on the map as far as possible from the other players. Seats nobody claims never appear. Range includes horizontal, vertical and diagonal squares (square / Chebyshev distance). Movement is orthogonal only. Players cannot occupy the same square. Eliminated players join the jury: once per day each juror can give 1 AP to a living player, and votes show in the log. Living players receive 1 AP every day at 20:00 Japan time. The database applies this even when everyone is offline.', ja: '各プレイヤーは席に参加したとき、AP1・ライフ3・射程2で始まり、他のプレイヤーからできるだけ離れた場所に現れます。誰も参加しなかった席は現れません。射程は縦・横・斜めを含みます(正方形/チェビシェフ距離)。移動は上下左右のみです。同じマスに2人は入れません。脱落したプレイヤーは陪審員になり、1日1回、生存者の1人に1APを渡せます。投票はログに表示されます。生存者は毎日20:00(日本時間)に1APを受け取ります。全員がオフラインでも、データベースが自動で付与します。' },
+    'rules.foot': { en: 'Each player starts with 1 AP, 3 lives and range 2. When the host starts the match, everyone who joined spawns at a random position, spread as far apart as possible, and nobody knows where until then. Seats nobody claims never appear. Range includes horizontal, vertical and diagonal squares (square / Chebyshev distance). Movement is orthogonal only. Players cannot occupy the same square. Eliminated players join the jury: once per day each juror can give 1 AP to a living player, and votes show in the log. Living players receive 1 AP every day at 20:00 Japan time. The database applies this even when everyone is offline.', ja: '各プレイヤーはAP1・ライフ3・射程2で始まります。ホストが対戦を開始すると、参加した全員がお互いできるだけ離れたランダムな位置に出現し、それまで誰も位置を知りません。誰も参加しなかった席は現れません。射程は縦・横・斜めを含みます(正方形/チェビシェフ距離)。移動は上下左右のみです。同じマスに2人は入れません。脱落したプレイヤーは陪審員になり、1日1回、生存者の1人に1APを渡せます。投票はログに表示されます。生存者は毎日20:00(日本時間)に1APを受け取ります。全員がオフラインでも、データベースが自動で付与します。' },
 
     'game.eyebrow': { en: 'Persistent match', ja: '進行中の対戦' },
     'game.title': { en: 'Alliance battlefield', ja: '同盟の戦場' },
@@ -58,9 +58,9 @@
     'lobby.eyebrow': { en: 'Lobby', ja: 'ロビー' },
     'lobby.title': { en: 'Waiting to start', ja: '開始待ち' },
     'lobby.start': { en: 'Start match', ja: '対戦を開始' },
-    'lobby.joined': { en: '{n} of {total} players have joined. Share the room code so the rest can join.', ja: '{total}人中{n}人が参加済みです。ルームコードを共有して残りの人も参加してもらいましょう。' },
+    'lobby.joined': { en: '{n} of {total} players have joined. Positions are chosen when the match starts. Share the room code so the rest can join.', ja: '{total}人中{n}人が参加済みです。位置は対戦の開始時に決まります。ルームコードを共有して残りの人も参加してもらいましょう。' },
     'lobby.need2': { en: ' You need at least 2 players before you can start.', ja: ' 開始するには2人以上が必要です。' },
-    'lobby.press': { en: ' When everyone is in, press Start. After that, no one else can join.', ja: ' 全員そろったら開始を押してください。その後は誰も新しく参加できません。' },
+    'lobby.press': { en: ' When everyone is in, press Start: everyone then spawns at random positions, and no one else can join.', ja: ' 全員そろったら開始を押してください。全員がランダムな位置に出現し、その後は誰も新しく参加できません。' },
     'lobby.waitHost': { en: ' Waiting for the host to start the match.', ja: ' ホストが対戦を開始するのを待っています。' },
     'lobby.confirm': { en: 'Start the match with {n} players? Seats that have not joined will be locked out.', ja: '{n}人で対戦を開始しますか?参加していない席は参加できなくなります。' },
     'lobby.started': { en: 'The match has started.', ja: '対戦が始まりました。' },
@@ -218,11 +218,12 @@
     [/^(.+) extended range to (\d+)\.$/, (m) => `${m[1]}が射程を${m[2]}に伸ばしました。`],
     [/^(.+) is the last country standing and wins the match!$/, (m) => `${m[1]}が最後の生き残りとして勝利しました!`],
     [/^(.+) \(jury\) gave 1 AP to (.+)\.$/, (m) => `${m[1]}(陪審員)が${m[2]}に1APを渡しました。`],
+    [/^(.+) joined the lobby\.$/, (m) => `${m[1]}がロビーに参加しました。`],
     [/^(.+) joined the (?:lobby|match) and spawned at ([A-Z]\d+)\.$/, (m) => `${m[1]}が参加し、${m[2]}に出現しました。`],
     [/^(.+) joined the match\.$/, (m) => `${m[1]}が参加しました。`],
-    [/^The match has started with (\d+) players\./, (m) => `${m[1]}人で対戦が始まりました。これ以降は誰も参加できません。`],
+    [/^The match has started with (\d+) players/, (m) => `${m[1]}人で対戦が始まりました。全員がランダムな位置に出現しました。これ以降は誰も参加できません。`],
     [/^Daily AP granted: every living player received 1 AP\.$/, () => '毎日のAP付与:生存者全員が1APを受け取りました。'],
-    [/^The lobby is open on a (\d+)x\d+ board\./, (m) => `${m[1]}×${m[1]}の盤面でロビーが開きました。参加するとライフ3・AP1・射程2で出現します。開始後は新しく参加できません。`],
+    [/^The lobby is open on a (\d+)x\d+ board\./, (m) => `${m[1]}×${m[1]}の盤面でロビーが開きました。開始時に全員がランダムな位置にライフ3・AP1・射程2で出現します。開始後は新しく参加できません。`],
     [/^The match began/, () => '対戦が始まりました。']
   ];
 
