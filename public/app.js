@@ -4,6 +4,7 @@
   const DEFAULT_NAMES = ['Japan', 'Canada', 'Brazil', 'France', 'Egypt', 'India', 'Australia', 'Mexico', 'Sweden'];
   const COLORS = ['#83c7d8', '#e8bf73', '#a4d18a', '#d99aa5', '#b3a0e6', '#e5a56f', '#8ec5ad', '#d5b4dd', '#c5c9d2'];
   const SESSION_KEY = 'tankTurnTacticsSessionV1';
+  const ACTION_COST = { move: 1, attack: 1, transfer: 1, extend: 2 };
   const $ = id => document.getElementById(id);
 
   const home = $('home');
@@ -120,7 +121,12 @@
     const button = $('createRoom');
     const names = [...document.querySelectorAll('.country-name')].map(input => input.value.trim());
     const playerIndex = $('hostPlayer').value === '' ? null : Number($('hostPlayer').value);
+    const boardSize = Number($('boardSize').value);
 
+    if (![10, 12, 15].includes(boardSize)) {
+      setStatus('hostStatus', 'Choose a board size.', true);
+      return;
+    }
     if (names.some(name => !name || name.length > 32)) {
       setStatus('hostStatus', 'Please enter all nine names (up to 32 characters each).', true);
       return;
@@ -135,7 +141,7 @@
     try {
       const result = await requestJSON('/api/games', {
         method: 'POST',
-        body: JSON.stringify({ names, playerIndex })
+        body: JSON.stringify({ names, playerIndex, boardSize })
       });
       const newSession = {
         roomCode: result.roomCode,
@@ -217,13 +223,26 @@
     }
   }
 
+  function boardSize() {
+    return Number(gameData?.game?.board_size) || 15;
+  }
+
+  // A player is "on the map" only after their seat has been claimed.
+  function onMap(player) {
+    return player.spawned !== false && player.is_alive;
+  }
+
   function myPlayer() {
     if (!gameData || !session?.playerId) return null;
     return gameData.players.find(player => player.id === session.playerId) || null;
   }
 
   function alivePlayers() {
-    return (gameData?.players || []).filter(player => player.is_alive);
+    return (gameData?.players || []).filter(onMap);
+  }
+
+  function joinedPlayers() {
+    return (gameData?.players || []).filter(player => player.spawned !== false);
   }
 
   function rangeDistance(a, b) {
@@ -243,15 +262,19 @@
   }
 
   function renderBoard() {
+    const size = boardSize();
     const board = $('board');
     board.innerHTML = '';
+    board.style.gridTemplateColumns = `repeat(${size}, minmax(0, 1fr))`;
+    board.setAttribute('aria-label', `${size} by ${size} game board`);
+
     const playersByPosition = new Map();
     for (const player of gameData.players) {
-      if (player.is_alive) playersByPosition.set(`${player.x},${player.y}`, player);
+      if (onMap(player)) playersByPosition.set(`${player.x},${player.y}`, player);
     }
 
-    for (let y = 0; y < 15; y++) {
-      for (let x = 0; x < 15; x++) {
+    for (let y = 0; y < size; y++) {
+      for (let x = 0; x < size; x++) {
         const occupant = playersByPosition.get(`${x},${y}`) || null;
         const cell = document.createElement('button');
         cell.type = 'button';
@@ -323,8 +346,9 @@
     const list = $('playersList');
     list.innerHTML = '';
     for (const player of gameData.players) {
+      const waiting = player.spawned === false;
       const row = document.createElement('div');
-      row.className = `player-row${player.is_alive ? '' : ' eliminated'}`;
+      row.className = `player-row${player.is_alive ? '' : ' eliminated'}${waiting ? ' waiting' : ''}`;
       const swatch = document.createElement('span');
       swatch.className = 'swatch';
       swatch.classList.add(`seat-${((player.seat_number - 1) % COLORS.length) + 1}`);
@@ -334,7 +358,8 @@
       name.textContent = player.name;
       const meta = document.createElement('span');
       meta.className = 'pmeta';
-      meta.textContent = player.is_alive ? `${player.ap} AP · ${player.lives} ♥ · R${player.attack_range}` : 'OUT';
+      if (waiting) meta.textContent = 'Not joined yet';
+      else meta.textContent = player.is_alive ? `${player.ap} AP · ${player.lives} ♥ · R${player.attack_range}` : 'OUT';
       row.append(swatch, name, meta);
       list.appendChild(row);
     }
@@ -365,10 +390,12 @@
   function renderGame() {
     if (!gameData) return;
     const currentPlayer = myPlayer();
+    const size = boardSize();
     const roomCode = gameData.game.room_code;
     $('roomCodeDisplay').textContent = roomCode;
+    $('boardTitle').textContent = `${size} × ${size} map`;
     $('dayValue').textContent = String(gameData.game.day);
-    $('aliveValue').textContent = `${alivePlayers().length} / 9`;
+    $('aliveValue').textContent = `${alivePlayers().length} / ${joinedPlayers().length}`;
     $('connectionValue').textContent = currentPlayer ? currentPlayer.name : 'Spectator';
     $('activeName').textContent = currentPlayer ? currentPlayer.name : 'Spectating';
     $('activeState').textContent = currentPlayer ? (currentPlayer.is_alive ? 'Active' : 'Eliminated') : 'Observer';
@@ -377,9 +404,10 @@
     $('activeRange').textContent = currentPlayer ? currentPlayer.attack_range : '—';
 
     const matchFinished = gameData.game.status === 'finished' || !!gameData.game.winner_player_id;
-    const disabled = !currentPlayer || !currentPlayer.is_alive || currentPlayer.ap < 1 || matchFinished;
+    const cannotAct = !currentPlayer || !currentPlayer.is_alive || matchFinished;
     document.querySelectorAll('[data-action]').forEach(button => {
-      button.disabled = disabled;
+      const cost = ACTION_COST[button.dataset.action] || 1;
+      button.disabled = cannotAct || currentPlayer.ap < cost;
       button.classList.toggle('selected', button.dataset.action === selectedAction);
     });
     $('cancelAction').disabled = !selectedAction;
@@ -398,8 +426,10 @@
       $('actionHint').textContent = `Click a living player within your range (${currentPlayer.attack_range}).`;
     } else if (selectedAction === 'transfer') {
       $('actionHint').textContent = `Click a living player within your range (${currentPlayer.attack_range}) to give them 1 AP.`;
+    } else if (currentPlayer.ap < 2) {
+      $('actionHint').textContent = 'Select an action. Extending your range needs 2 AP.';
     } else {
-      $('actionHint').textContent = 'Select an action. Each action costs 1 AP.';
+      $('actionHint').textContent = 'Select an action. Extending your range costs 2 AP; everything else costs 1.';
     }
 
     $('boardHint').textContent = selectedAction
@@ -423,7 +453,8 @@
   function chooseAction(type) {
     const player = myPlayer();
     const finished = gameData?.game?.status === 'finished';
-    if (!player || !player.is_alive || player.ap < 1 || finished) return;
+    const cost = ACTION_COST[type] || 1;
+    if (!player || !player.is_alive || player.ap < cost || finished) return;
     if (type === 'extend') {
       selectedAction = null;
       sendAction({ type: 'extend' });
