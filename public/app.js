@@ -122,9 +122,14 @@
     const names = [...document.querySelectorAll('.country-name')].map(input => input.value.trim());
     const playerIndex = $('hostPlayer').value === '' ? null : Number($('hostPlayer').value);
     const boardSize = Number($('boardSize').value);
+    const passcode = $('createPasscode').value;
 
     if (![10, 12, 15].includes(boardSize)) {
       setStatus('hostStatus', 'Choose a board size.', true);
+      return;
+    }
+    if (playerIndex !== null && (passcode.length < 6 || passcode.length > 64)) {
+      setStatus('hostStatus', 'Choose a seat passcode of 6 to 64 characters.', true);
       return;
     }
     if (names.some(name => !name || name.length > 32)) {
@@ -141,7 +146,7 @@
     try {
       const result = await requestJSON('/api/games', {
         method: 'POST',
-        body: JSON.stringify({ names, playerIndex, boardSize })
+        body: JSON.stringify({ names, playerIndex, boardSize, passcode: playerIndex === null ? undefined : passcode })
       });
       const newSession = {
         roomCode: result.roomCode,
@@ -164,6 +169,7 @@
     const button = $('joinRoom');
     const roomCode = $('roomCodeInput').value.trim().toUpperCase();
     const name = $('joinName').value.trim();
+    const passcode = $('joinPasscode').value;
     if (!/^[A-Z0-9]{6}$/.test(roomCode)) {
       setStatus('joinStatus', 'Enter the six-character room code.', true);
       return;
@@ -172,20 +178,52 @@
       setStatus('joinStatus', 'Enter your assigned player name.', true);
       return;
     }
+    if (passcode.length < 6 || passcode.length > 64) {
+      setStatus('joinStatus', 'Choose a seat passcode of 6 to 64 characters.', true);
+      return;
+    }
 
     button.disabled = true;
     setStatus('joinStatus', 'Joining game…');
     try {
       const result = await requestJSON('/api/join', {
         method: 'POST',
-        body: JSON.stringify({ roomCode, name })
+        body: JSON.stringify({ roomCode, name, passcode })
       });
       saveSession({ roomCode: result.roomCode, playerId: result.playerId, token: result.token, name });
       selectedAction = null;
       await refreshGame(false, true);
-      setStatus('joinStatus', 'You joined the match.');
+      setStatus('joinStatus', 'You joined the match. Remember your passcode to log back in elsewhere.');
     } catch (error) {
       setStatus('joinStatus', error.message || 'Could not join the game.', true);
+    } finally {
+      button.disabled = false;
+    }
+  }
+
+  async function loginRoom() {
+    const button = $('loginRoom');
+    const roomCode = $('roomCodeInput').value.trim().toUpperCase();
+    const name = $('joinName').value.trim();
+    const passcode = $('joinPasscode').value;
+    if (!/^[A-Z0-9]{6}$/.test(roomCode) || !name || !passcode) {
+      setStatus('joinStatus', 'Enter the room code, your player name and your seat passcode.', true);
+      return;
+    }
+
+    button.disabled = true;
+    setStatus('joinStatus', 'Logging back in…');
+    try {
+      const result = await requestJSON('/api/login', {
+        method: 'POST',
+        body: JSON.stringify({ roomCode, name, passcode })
+      });
+      saveSession({ roomCode: result.roomCode, playerId: result.playerId, token: result.token, name });
+      selectedAction = null;
+      await refreshGame(false, true);
+      setStatus('joinStatus', 'Welcome back.');
+    } catch (error) {
+      setStatus('joinStatus', error.message || 'Could not log back in.', true);
     } finally {
       button.disabled = false;
     }
@@ -359,10 +397,109 @@
       const meta = document.createElement('span');
       meta.className = 'pmeta';
       if (waiting) meta.textContent = 'Not joined yet';
-      else meta.textContent = player.is_alive ? `${player.ap} AP · ${player.lives} ♥ · R${player.attack_range}` : 'OUT';
+      else meta.textContent = player.is_alive ? `${player.ap} AP · ${player.lives} ♥ · R${player.attack_range}` : 'JURY';
       row.append(swatch, name, meta);
       list.appendChild(row);
     }
+  }
+
+  async function sendJuryVote(targetId) {
+    if (!session?.token || !session?.playerId) return;
+    try {
+      await requestJSON('/api/jury-vote', {
+        method: 'POST',
+        body: JSON.stringify({
+          roomCode: session.roomCode,
+          playerId: session.playerId,
+          token: session.token,
+          targetId
+        })
+      });
+      showNotice('Jury vote cast.');
+    } catch (error) {
+      showNotice(error.message || 'That vote could not be cast.', true);
+    }
+    await refreshGame(true);
+  }
+
+  function renderJury() {
+    const card = $('juryCard');
+    const me = myPlayer();
+    const finished = gameData.game.status === 'finished' || !!gameData.game.winner_player_id;
+    const isJuror = !!me && me.spawned !== false && !me.is_alive;
+    card.classList.toggle('hidden', !isJuror || finished);
+    if (!isJuror || finished) return;
+
+    const votedToday = (me.last_jury_vote_day || 0) >= gameData.game.day;
+    $('juryHint').textContent = votedToday
+      ? 'You have used today\'s jury vote. You can vote again after the next 20:00 JST reset.'
+      : 'Give 1 AP to a living player. One vote per day, and votes are public.';
+
+    const list = $('juryList');
+    list.innerHTML = '';
+    for (const player of alivePlayers()) {
+      const row = document.createElement('div');
+      row.className = 'player-row';
+      const name = document.createElement('span');
+      name.className = 'pname';
+      name.textContent = player.name;
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'btn subtle';
+      button.textContent = 'Give 1 AP';
+      button.disabled = votedToday;
+      button.addEventListener('click', () => sendJuryVote(player.id));
+      row.append(name, button);
+      list.appendChild(row);
+    }
+  }
+
+  async function startGame() {
+    const joined = joinedPlayers().length;
+    if (!window.confirm(`Start the match with ${joined} players? Seats that have not joined will be locked out.`)) return;
+    const button = $('startGame');
+    button.disabled = true;
+    try {
+      await requestJSON('/api/start', {
+        method: 'POST',
+        body: JSON.stringify({
+          roomCode: session.roomCode,
+          playerId: session.playerId,
+          token: session.token
+        })
+      });
+      showNotice('The match has started.');
+    } catch (error) {
+      showNotice(error.message || 'Could not start the match.', true);
+    }
+    await refreshGame(true);
+  }
+
+  function renderLobby() {
+    const card = $('lobbyCard');
+    const inLobby = gameData.game.status === 'waiting';
+    card.classList.toggle('hidden', !inLobby);
+    if (!inLobby) return;
+
+    const me = myPlayer();
+    const joined = joinedPlayers().length;
+    const hostId = gameData.game.host_player_id;
+    const mayStart = !!me && me.spawned !== false && (!hostId || hostId === me.id);
+    const total = gameData.players.length;
+
+    let text = `${joined} of ${total} players have joined. Share the room code so the rest can join.`;
+    if (mayStart) {
+      text += joined < 2
+        ? ' You need at least 2 players before you can start.'
+        : ' When everyone is in, press Start. After that, no one else can join.';
+    } else {
+      text += ' Waiting for the host to start the match.';
+    }
+    $('lobbyHint').textContent = text;
+
+    const button = $('startGame');
+    button.classList.toggle('hidden', !mayStart);
+    button.disabled = joined < 2;
   }
 
   function formatJST(timestamp) {
@@ -404,7 +541,8 @@
     $('activeRange').textContent = currentPlayer ? currentPlayer.attack_range : '—';
 
     const matchFinished = gameData.game.status === 'finished' || !!gameData.game.winner_player_id;
-    const cannotAct = !currentPlayer || !currentPlayer.is_alive || matchFinished;
+    const inLobby = gameData.game.status === 'waiting';
+    const cannotAct = !currentPlayer || !currentPlayer.is_alive || matchFinished || inLobby;
     document.querySelectorAll('[data-action]').forEach(button => {
       const cost = ACTION_COST[button.dataset.action] || 1;
       button.disabled = cannotAct || currentPlayer.ap < cost;
@@ -412,10 +550,12 @@
     });
     $('cancelAction').disabled = !selectedAction;
 
-    if (!currentPlayer) {
+    if (inLobby) {
+      $('actionHint').textContent = 'The match has not started yet. Actions unlock when the host presses Start.';
+    } else if (!currentPlayer) {
       $('actionHint').textContent = 'You are spectating. Join an unclaimed player seat to take actions.';
     } else if (!currentPlayer.is_alive) {
-      $('actionHint').textContent = 'Your country has been eliminated. You can still watch the match.';
+      $('actionHint').textContent = 'Your country has been eliminated. You are on the jury: vote below.';
     } else if (matchFinished) {
       $('actionHint').textContent = 'The match is over.';
     } else if (currentPlayer.ap < 1) {
@@ -445,8 +585,10 @@
       winnerBanner.classList.add('hidden');
     }
 
+    renderLobby();
     renderBoard();
     renderPlayers();
+    renderJury();
     renderLog();
   }
 
@@ -477,6 +619,8 @@
 
   $('createRoom').addEventListener('click', createRoom);
   $('joinRoom').addEventListener('click', joinRoom);
+  $('loginRoom').addEventListener('click', loginRoom);
+  $('startGame').addEventListener('click', startGame);
   $('copyRoom').addEventListener('click', copyRoomCode);
   $('backHome').addEventListener('click', showHomeView);
   $('cancelAction').addEventListener('click', () => { selectedAction = null; if (gameData) renderGame(); });
